@@ -1,0 +1,677 @@
+# Android Platform Test Ecosystem for OEM Android TV OS Builds
+
+This document enumerates **all AOSP and Google compatibility test suites relevant to an OEM building the Android OS itself**, not apps.  
+Scope includes **framework, native services, HAL, kernel, media, security, and system-level validation**, with **Android TV relevance called out where applicable**.
+
+---
+
+## 1. CTS (Compatibility Test Suite)
+
+**What it is**  
+Behavioral compatibility validation for Android framework APIs and system behavior.
+
+**Layer validated**
+
+- Java framework
+- System services
+- Media, graphics, audio APIs
+- Permissions, storage, networking
+- Android TV framework behavior
+
+**Mandatory for Google certification**  
+Yes (absolute requirement)
+
+**Harness**  
+Trade Federation (`cts-tradefed`)
+
+**Execution target**
+
+- Physical device (certification)
+- Emulator (early development only)
+
+**CI/CD placement**
+
+- Presubmit: targeted CTS modules
+- Nightly: full CTS
+- Release gate: full CTS with zero unresolved failures
+
+---
+
+## 2. CTS-on-GSI
+
+**What it is**  
+CTS executed on a Generic System Image with OEM vendor/kernel stack.
+
+**Layer validated**
+
+- Vendor Interface (Treble compliance)
+- System/vendor separation
+
+**Mandatory**  
+Yes (Treble requirement)
+
+**Harness**  
+Trade Federation
+
+**Execution target**
+
+- Physical device flashed with GSI
+
+**CI/CD placement**
+
+- Nightly
+- Release gate
+
+---
+
+## 3. VTS (Vendor Test Suite)
+
+**What it is**  
+HAL and vendor interface correctness, stability, and version compliance.
+
+**Layer validated**
+
+- HALs (HIDL / AIDL)
+- Vendor services
+- Binder IPC behavior
+
+**Mandatory**  
+Yes
+
+**Harness**  
+Trade Federation (`vts-tradefed`)
+
+**Execution target**
+
+- Physical device
+
+**CI/CD placement**
+
+- Presubmit: HAL/vendor changes
+- Nightly
+- Release gate
+
+---
+
+## 4. VTS-on-GSI
+
+**What it is**  
+VTS run with a GSI system image.
+
+**Layer validated**
+
+- Vendor independence from system image
+- Treble enforcement
+
+**Mandatory**  
+Yes
+
+**Harness**  
+Trade Federation
+
+**Execution target**
+
+- Physical device with GSI
+
+**CI/CD placement**
+
+- Nightly
+- Release gate
+
+---
+
+## 5. GTS (Google Test Suite)
+
+**What it is**  
+Validation of Google-specific APIs and behaviors.
+
+**Layer validated**
+
+- Google framework extensions
+- GMS interaction points
+
+**Mandatory**  
+Yes (licensed Android TV devices)
+
+**Harness**  
+Trade Federation (`gts-tradefed`)
+
+**Execution target**
+
+- Physical device with GMS
+
+**CI/CD placement**
+
+- Late nightly
+- Release gate
+
+---
+
+## 6. STS (Security Test Suite)
+
+**What it is**  
+Regression tests for known Android security vulnerabilities (CVEs).
+
+**Layer validated**
+
+- Framework
+- Native services
+- Kernel interfaces
+- SELinux enforcement
+
+**Mandatory**  
+Yes
+
+**Harness**  
+Trade Federation (`sts-tradefed`)
+
+**Execution target**
+
+- Physical device
+
+**CI/CD placement**
+
+- Nightly
+- Mandatory before OTA / security release
+
+---
+
+## 7. Kernel CTS (KCTS)
+
+**What it is**  
+Kernel behavior, syscall correctness, and ABI validation.
+
+**Layer validated**
+
+- Linux kernel
+- Kernel ABI and interfaces
+
+**Mandatory**  
+Yes (modern Android versions)
+
+**Harness**  
+Trade Federation + kernel test modules
+
+**Execution target**
+
+- Physical device
+
+**CI/CD placement**
+
+- Presubmit (kernel changes)
+- Nightly
+- Release gate
+
+---
+
+## 8. Kernel Test Framework (KTF) / LTP-Based Tests
+
+**What it is**  
+Low-level kernel correctness and stress testing.
+
+**Layer validated**
+
+- Memory management
+- Scheduling
+- Filesystems
+- Kernel stress paths
+
+**Mandatory**  
+Not formally, but strongly expected for OEM quality
+
+**Harness**
+
+- Trade Federation or custom harness
+- Often Linux Test Project (LTP) based
+
+**Execution target**
+
+- Physical device
+
+**CI/CD placement**
+
+- Nightly
+- Pre-release soak testing
+
+---
+
+## 9. Framework Unit Tests (frameworks/base)
+
+**What it is**  
+AOSP internal unit and integration tests for framework code.
+
+**Layer validated**
+
+- Framework internals
+- System service logic
+
+**Mandatory**  
+No (but skipping is engineering negligence)
+
+**Harness**
+
+- Trade Federation
+- `atest`
+
+**Execution target**
+
+- Host JVM
+- Emulator or device
+
+**CI/CD placement**
+
+- Presubmit
+- Nightly
+
+---
+
+## 10. Native / C++ Service Tests
+
+**What it is**  
+GTest-based tests for native system services.
+
+**Layer validated**
+
+- Native services
+- Binder IPC
+- Memory safety
+
+**Mandatory**  
+Indirectly (failures surface as CTS/VTS issues)
+
+**Harness**
+
+- Trade Federation
+- Native test runners
+
+**Execution target**
+
+- Device
+- Some host-side
+
+**CI/CD placement**
+
+- Presubmit (native changes)
+- Nightly
+
+---
+
+## 11. Media CTS / Media VTS
+
+**What it is**  
+Validation of codecs, playback, and DRM paths.
+
+**Layer validated**
+
+- Media framework
+- Codec HALs
+- Hardware acceleration paths
+
+**Mandatory**  
+Yes (critical for Android TV)
+
+**Harness**
+
+- Trade Federation
+
+**Execution target**
+
+- Physical device
+
+**CI/CD placement**
+
+- Nightly
+- Release gate
+
+---
+
+## 12. Graphics CTS (OpenGL, Vulkan, HWUI)
+
+**What it is**  
+Rendering correctness and GPU API compliance.
+
+**Layer validated**
+
+- GPU drivers
+- Framework rendering stack
+
+**Mandatory**  
+Yes
+
+**Harness**  
+Trade Federation
+
+**Execution target**
+
+- Physical device
+
+**CI/CD placement**
+
+- Nightly
+- Release gate
+
+**Notes**
+
+- Flaky tests usually indicate GPU driver race conditions
+- Ignoring flakes leads to black screens in production
+
+---
+
+## 13. Audio CTS
+
+**What it is**  
+Audio routing, latency, and format support validation.
+
+**Layer validated**
+
+- Audio HAL
+- Audio framework
+
+**Mandatory**  
+Yes
+
+**Harness**  
+Trade Federation
+
+**Execution target**
+
+- Physical device (often with loopback setups)
+
+**CI/CD placement**
+
+- Nightly
+- Release gate
+
+---
+
+## 14. Camera CTS
+
+**What it is**  
+Camera HAL and framework behavior validation.
+
+**Layer validated**
+
+- Camera HAL
+- Media framework
+
+**Mandatory**  
+Yes, if the device declares a camera
+
+**Harness**  
+Trade Federation
+
+**Execution target**
+
+- Physical device
+
+**CI/CD placement**
+
+- Nightly
+- Release gate
+
+---
+
+## 15. DRM / Widevine Tests
+
+**What it is**  
+Validation of DRM robustness and secure playback paths.
+
+**Layer validated**
+
+- DRM HAL
+- Secure video pipeline
+- TEE interaction
+
+**Mandatory**  
+Yes (Android TV)
+
+**Harness**
+
+- Trade Federation + vendor tools
+
+**Execution target**
+
+- Physical device
+
+**CI/CD placement**
+
+- Release gate
+- Controlled test environments
+
+---
+
+## 16. SELinux CTS / VTS Tests
+
+**What it is**  
+SELinux policy correctness and enforcement validation.
+
+**Layer validated**
+
+- SELinux rules
+- Domain isolation
+
+**Mandatory**  
+Yes
+
+**Harness**
+
+- Trade Federation
+
+**Execution target**
+
+- Physical device
+
+**CI/CD placement**
+
+- Presubmit (policy changes)
+- Nightly
+- Release gate
+
+---
+
+## 17. Performance, Stability, and Stress Tests
+
+**What it is**  
+Long-running system stress, soak, and stability testing.
+
+**Layer validated**
+
+- Entire system stack
+
+**Mandatory**  
+Not formally, but required for production-quality OEM builds
+
+**Harness**
+
+- Trade Federation
+- Monkey
+- Custom stress harnesses
+
+**Execution target**
+
+- Physical device
+
+**CI/CD placement**
+
+- Nightly soak
+- Pre-release validation
+
+---
+
+## 18. Legacy / Deprecated Test Suites
+
+**Examples**
+
+- Monkey
+- CTS Verifier (manual tests)
+
+**Mandatory**
+
+- CTS Verifier: Yes (feature-dependent)
+- Monkey: No
+
+**Notes**
+
+- Legacy does not mean irrelevant
+- Still used to catch real-world failure modes
+
+## 19. Vendor Internal HAL Test Suites (Non-Google, But Critical)
+
+**What it is**  
+Vendor-supplied validation suites for HALs and firmware-facing components  
+(e.g. GPU, audio DSP, ISP, HDMI, display, modem-less TV subsystems).
+
+**Layer validated**
+
+- HAL implementation details
+- Vendor firmware and driver interfaces
+- Timing, error handling, and edge conditions not covered by VTS
+
+**Mandatory**
+
+- Not required for Google certification
+- Mandatory for engineering sanity and long-term stability
+
+**Harness**
+
+- Vendor-specific test harnesses
+- Sometimes integrated with Trade Federation
+- Sometimes standalone (Python, shell, proprietary frameworks)
+
+**Execution target**
+
+- Physical device only
+
+**CI/CD placement**
+
+- Presubmit: when ingesting vendor drops or HAL changes
+- Nightly: continuous regression detection on stable hardware
+
+**Notes**
+
+- These tests catch issues _before_ VTS turns them into certification blockers
+- Failures here are cheaper to fix than late-stage CTS/VTS failures
+- Mature OEMs integrate these early and treat them as first-class CI signals
+
+---
+
+## Summary Mental Model
+
+- **CTS** is a certification contract, not a single test run
+- **Modules exist because hardware, ownership, and execution constraints differ**
+- **All relevant CTS/VTS/GTS/STS modules must pass for certification**
+- CI/CD must tier tests intelligently to avoid false confidence or wasted effort
+
+## What “instrumentation test” actually means
+
+### Instrumentation tests are:
+
+- Device-side tests
+- Run via `am instrument`
+- Usually JUnit-based
+- Can access:
+  - framework APIs
+  - system services
+  - privileged permissions
+  - hidden APIs (for platform-signed code)
+  - That describes huge parts of CTS.
+
+## Where Instrumentation Tests Live in the Test Map
+
+Instrumentation tests are **not a separate test suite**.  
+They are an **execution model** used by multiple platform test suites.
+
+---
+
+### 1. CTS → Heavy User of Instrumentation
+
+Most CTS tests are:
+
+- Instrumentation tests
+- Running inside `android.platform.test.runner`
+- Signed with platform or test keys
+- Exercising framework and system service behavior
+
+**Correct relationship**
+
+They are **part of CTS**, not parallel to it.
+
+---
+
+### 2. Media / Graphics / Audio / Camera CTS → Instrumentation-Heavy
+
+These CTS modules are classic instrumentation use cases:
+
+- Media playback validation
+- Surface and rendering behavior
+- Audio routing and latency verification
+- Camera capture and metadata validation
+
+They:
+
+- Run on-device
+- Interact with real system services
+- Require privileged permissions
+
+All are executed via **instrumentation**.
+
+---
+
+### 3. STS → Instrumentation + Native Mix
+
+STS combines:
+
+- Instrumentation tests for framework-level exploit regression
+- Native binaries for low-level attack surface validation
+
+Still firmly within the **instrumentation-driven execution model** where applicable.
+
+---
+
+### 4. Framework Internal Tests → Instrumentation or Host JVM
+
+Within AOSP framework tests you will find:
+
+- Pure JVM tests (host-side)
+- Instrumentation tests for framework paths that require a real Android system
+
+OEMs routinely run both as part of platform validation.
+
+---
+
+### 5. Vendor HAL Tests → Sometimes Instrumentation
+
+Some vendor internal HAL test suites:
+
+- Wrap HAL validation inside an instrumentation APK
+- Common for media, audio, display, and graphics HALs
+
+This approach is used when:
+
+- Vendor needs framework context
+- Vendor wants simpler Tradefed integration
+
+As a result, **vendor internal tests may also use instrumentation**.
+
+---
+
+## Where Instrumentation Tests Do _Not_ Belong
+
+Instrumentation is **not used for**:
+
+- Kernel-only tests (KCTS, LTP)
+- Pure HAL conformance tests in VTS (mostly native binaries)
+- Bootloader or early-boot validation
+- Host-only tests
+
+Different layers impose different execution constraints.
+
+---
+
+## Key Mental Model
+
+- Instrumentation is a **delivery mechanism**
+- Used by CTS, STS, framework tests, and sometimes vendor tests
+- Not an independent test category
+- Not app-specific
+- A core OEM platform testing tool
