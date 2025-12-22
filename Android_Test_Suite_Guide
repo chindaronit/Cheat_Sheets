@@ -675,3 +675,303 @@ Different layers impose different execution constraints.
 - Not an independent test category
 - Not app-specific
 - A core OEM platform testing tool
+
+# AOSP / Tradefed Execution Models — Complete OEM Mapping
+
+Execution model = where the test code runs and how Trade Federation drives it.  
+Test suites (CTS / VTS / GTS / STS / ATS / TVTS) are collections that reuse these models.
+
+---
+
+## 1. Host-Side Java (JAR) Tests
+
+**Canonical name:** Host-side Java / JarHostTest
+
+### Execution happens
+- Host only
+- JVM on build machine
+
+### Tradefed runner / base
+- com.android.tradefed.testtype.JarHostTest  
+- com.android.tradefed.testtype.HostTest
+
+### Test suites using this model
+- CTS (HostSide tests)
+- STS (security regressions)
+- GTS (policy / config checks)
+- ATS (build & artifact validation)
+- CTS-TV (host-side policy checks)
+
+### AOSP source locations
+```
+cts/hostsidetests/ 
+cts/hostsidetests/api/ 
+cts/hostsidetests/security/ 
+cts/hostsidetests/media/
+```
+Framework examples:
+```
+platform_testing/tests/example/jarhosttest/ frameworks/base/tests/hosttests/
+frameworks/base/services/tests/servicestests/src/com/android/server/host/
+```
+
+### Example modules
+- CtsAppSecurityHostTestCases
+- CtsMediaHostTestCases
+- CtsApiSignatureTestCases
+
+### CI/CD placement
+- Presubmit
+- Post-build
+- Nightly
+- Release gate
+
+---
+
+## 2. Host-Side Python Tests
+
+**Canonical name:** Host-side Python (PythonRunner)
+
+### Execution happens
+- Host
+- Python interpreter
+
+### Tradefed runner / base
+- com.android.tradefed.testtype.python.PythonRunner
+
+### Test suites using this model
+- VTS
+- ATS
+- Partner infra tests
+- Some STS host logic
+
+### AOSP source locations
+```
+test/vts/tools/vts-tradefed/ test/vts/testcases/
+```
+Examples:
+```
+test/vts/testcases/kernel/
+test/vts/testcases/vndk/
+```
+
+### CI/CD placement
+- Post-build
+- Nightly
+- Release gate
+
+---
+
+## 3. Device-Side Instrumentation Tests
+
+**Canonical name:** Android Instrumentation
+
+### Execution happens
+- Device (Android runtime)
+
+### Tradefed runner / base
+- AndroidJUnitTest
+- InstrumentationTest
+- AndroidTestRunner
+
+### Test suites using this model
+- CTS
+- CTS-TV
+- GTS
+- STS
+- Media / Graphics / Audio / Camera CTS
+
+### AOSP source locations
+```
+cts/tests/ 
+cts/tests/tests/ 
+cts/tests/media/ 
+cts/tests/graphics/ 
+cts/tests/audio/ 
+cts/tests/camera/
+```
+
+Framework tests:
+```
+frameworks/base/tests/ 
+frameworks/base/services/tests/ 
+frameworks/base/packages/SystemUI/tests/
+```
+
+### CI/CD placement
+- Nightly
+- Release gate
+- Limited presubmit
+
+---
+
+## 4. Native Device-Side Tests (C/C++)
+
+**Canonical name:** Native GTest / NativeTest
+
+### Execution happens
+- Device (userspace native)
+
+### Tradefed runner / base
+- com.android.tradefed.testtype.NativeTest
+
+### Test suites using this model
+- CTS (native)
+- VTS
+- STS
+- Media / Graphics CTS
+
+### AOSP source locations
+```
+cts/tests/tests/native/ 
+frameworks/native/services/tests/ 
+frameworks/av/media/tests/ 
+system/core/libutils/tests/ 
+system/libhidl/transport/tests/
+```
+### CI/CD placement
+- Nightly
+- Release gate
+
+---
+
+## 5. Vendor HAL Tests (VTS Device-Side)
+
+**Canonical name:** VTS HAL Device Tests
+
+### Execution happens
+- Device
+- Native binaries
+
+### Tradefed runner / base
+- VtsHalAdapter
+- NativeTest
+
+### Test suites using this model
+- VTS
+- VTS-on-GSI
+- TV-specific VTS
+
+### AOSP source locations
+```
+test/vts/testcases/hal/
+hardware/interfaces/*/*/vts/
+```
+### CI/CD placement
+- Presubmit (vendor drops)
+- Nightly
+- Release gate
+
+---
+
+## 6. Kernel Tests (KCTS / LTP)
+
+**Canonical name:** Kernel CTS / Kernel Native Tests
+
+### Execution happens
+- Kernel / minimal userspace
+
+### Tradefed runner / base
+- NativeTest
+- KernelTargetTest
+
+### Test suites
+- Kernel CTS
+- VTS kernel tests
+- STS kernel regressions
+
+### AOSP source locations
+```
+cts/tests/tests/kernel/ 
+test/vts/testcases/kernel/ 
+kernel/tools/testing/selftests/
+```
+
+### CI/CD placement
+- Kernel presubmit
+- Nightly
+- Release gate
+
+---
+
+## 7. Shell-Based Tests
+
+**Canonical name:** Shell / Command-Driven Tests
+
+### Execution happens
+- Hybrid (host drives, device executes shell)
+
+### Tradefed runner / base
+- ShellCommandTest
+- DeviceTest
+
+### AOSP source locations
+```
+cts/tests/tests/shell/ 
+cts/hostsidetests/shell/
+```
+
+### CI/CD placement
+- Nightly
+- Release gate
+
+---
+
+## 8. Hybrid Host + Device Orchestration
+
+**Canonical name:** Hybrid Orchestrated Tests
+
+### Execution happens
+- Host + Device
+
+### Tradefed runner / base
+- BaseTestSuite
+- Mixed JarHostTest + InstrumentationTest
+
+### Test suites
+- CTS
+- STS
+- GTS
+- TVTS
+
+### AOSP source locations
+```
+cts/tools/ platform_testing/ 
+platform_testing/libraries/tradefed/
+```
+
+### CI/CD placement
+- Nightly
+- Certification gate
+
+---
+
+## 9. CTS Verifier (Manual)
+
+**Canonical name:** CTS Verifier Instrumentation
+
+### Execution happens
+- Device
+- Human-in-the-loop
+
+### AOSP source location
+```
+cts/apps/CtsVerifier
+```
+### CI/CD placement
+- Certification only
+- Not automated
+
+---
+
+## Final Mental Model
+
+- Execution model ≠ test suite
+- Test suites are collections
+- Execution model defines:
+  - where code runs
+  - how Tradefed executes it
+  - reliability vs flakiness
+
+If you can identify the execution model from the directory path,  
+you already know how to wire it into CI/CD.
