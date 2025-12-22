@@ -1,0 +1,558 @@
+# AOSP Root Architecture — OEM Platform View (Android TV–centric)
+
+This document explains **AOSP as a system**, starting from the **root of the source tree**, from the perspective of an **OEM Android TV platform architect** responsible for OS bring-up, integration, and certification-grade CI/CD.
+
+This is **not** a folder tour.  
+It explains **why each directory exists, what layer it belongs to, how it fails, and how it is tested**.
+
+---
+
+## `/build/` — Build System & Product Assembly
+
+### Architectural role
+Defines **how Android is built**, not runtime behavior.  
+This is the **OS factory**.
+
+### Code types
+- Python
+- Go
+- Shell
+- Blueprint (`.bp`)
+- Make (`.mk`)
+
+### Android layer
+- Tooling / build / infra
+
+### What must be tested
+- Build graph correctness
+- Module dependency resolution
+- Partition generation
+- Reproducibility
+
+### Execution models
+| Model | Where |
+|-----|------|
+| Host-side build validation | Host |
+
+### Test suites
+- ATS (Android Test Suite)
+- Internal build tests
+
+### Test locations
+```
+platform_testing/tests/ats/
+build/soong/tests/
+```
+
+### Certification relevance
+- ❌ Not directly certified
+- ✅ Indirectly critical
+
+### CI/CD role
+- Presubmit (Soong graph)
+- Post-build validation
+- Release artifact sanity
+
+---
+
+## `/frameworks/` — Android Framework & Core Services
+
+### Architectural role
+The **policy brain** of Android:
+- App lifecycle
+- Permissions
+- Windowing
+- Media & power policy
+- System services
+
+### Code types
+- Java
+- Kotlin
+- C++
+- Rust
+- AIDL
+
+### Android layer
+- Framework
+- Framework-backed native services
+
+### What must be tested
+- API behavior
+- System service logic
+- Security enforcement
+- Lifecycle correctness
+
+### Execution models
+| Model | Where |
+|-----|------|
+| Instrumentation | Device |
+| Host-side JAR | Host |
+| Native gtest | Device |
+
+### Test suites
+- CTS
+- STS
+- GTS
+- CTS-TV
+
+### Test locations
+```
+frameworks/base/tests/ 
+frameworks/base/services/tests/ 
+cts/tests/tests/ 
+cts/hostsidetests/
+```
+### Certification relevance
+- ✅ Mandatory
+
+### CI/CD role
+- Presubmit (framework tests)
+- Nightly CTS
+- Release gate
+
+---
+
+## `/system/` — Native System Services & Core Daemons
+
+### Architectural role
+Native OS services:
+- init
+- vold
+- netd
+- logd
+- surfaceflinger (partial)
+
+### Code types
+- C / C++
+- Rust
+- Shell
+
+### Android layer
+- Native system services
+
+### What must be tested
+- IPC behavior
+- Startup ordering
+- Privilege boundaries
+- Stability
+
+### Execution models
+| Model | Where |
+|-----|------|
+| Native gtest | Device |
+| Shell-driven tests | Hybrid |
+
+### Test suites
+- CTS (native)
+- STS
+
+### Test locations
+```
+system/core/tests/ 
+frameworks/native/services/tests/ 
+cts/tests/tests/native/
+```
+
+### Certification relevance
+- ✅ Mandatory
+
+### CI/CD role
+- Nightly
+- Release gate
+
+---
+
+## `/hardware/` — HAL Definitions & Reference HALs
+
+### Architectural role
+Defines the **framework ↔ vendor contract**.
+
+### Code types
+- AIDL
+- C++
+- HIDL (legacy)
+
+### Android layer
+- HAL
+- Vendor interface
+
+### What must be tested
+- Interface compliance
+- Versioning
+- Error handling
+- Death behavior
+
+### Execution models
+| Model | Where |
+|-----|------|
+| Native HAL tests | Device |
+| Host orchestration | Host |
+
+### Test suites
+- VTS
+- VTS-on-GSI
+
+### Test locations
+```
+hardware/interfaces/*/*/vts/
+test/vts/testcases/hal/
+```
+
+### Certification relevance
+- ✅ Mandatory
+
+### CI/CD role
+- Presubmit (vendor drops)
+- Nightly
+- Release gate
+
+---
+
+## `/device/` — Product Definition & Bring-up
+
+### Architectural role
+Defines **what the product is**:
+- Board config
+- Partitions
+- Feature flags
+- init rc
+- SEPolicy overlays
+
+### Code types
+- Make / Blueprint
+- Shell
+- XML
+- SELinux policy
+
+### Android layer
+- Product integration
+
+### What must be tested
+- Boot success
+- Feature declarations
+- SELinux correctness
+
+### Execution models
+| Model | Where |
+|-----|------|
+| CTS | Device |
+| STS | Device |
+
+### Test suites
+- CTS
+- STS
+- CTS Verifier
+
+### Certification relevance
+- ✅ Mandatory
+
+### CI/CD role
+- Post-build
+- Nightly
+- Release gate
+
+---
+
+## `/vendor/` — OEM / SoC Implementations
+
+### Architectural role
+Everything **Google does not own**:
+- HAL implementations
+- Vendor services
+- Firmware glue
+- Board daemons
+
+### Code types
+- C / C++
+- Rust
+- Shell
+- SELinux policy
+
+### Android layer
+- Vendor implementation
+
+### What must be tested
+- HAL correctness
+- Treble compliance
+- Stability
+
+### Execution models
+| Model | Where |
+|-----|------|
+| VTS | Device |
+| Vendor native tests | Device |
+
+### Test suites
+- VTS
+- CTS-on-GSI
+
+### Test locations
+```
+test/vts/testcases/
+vendor/<oem>/tests/
+```
+
+### Certification relevance
+- ✅ Mandatory
+
+### CI/CD role
+- Presubmit
+- Nightly
+- Release gate
+
+---
+
+## `/kernel/` — Linux Kernel
+
+### Architectural role
+Provides:
+- Scheduling
+- Memory
+- Filesystems
+- Power
+- Drivers
+
+### Code types
+- C
+- Assembly
+
+### Android layer
+- Kernel
+
+### What must be tested
+- Syscalls
+- ABI stability
+- Power management
+- Long-run stability
+
+### Execution models
+| Model | Where |
+|-----|------|
+| Kernel CTS | Kernel |
+| LTP / selftests | Kernel |
+
+### Test suites
+- Kernel CTS
+- VTS kernel tests
+- STS
+
+### Test locations
+cts/tests/tests/kernel/
+test/vts/testcases/kernel/ 
+kernel/tools/testing/selftests/
+
+### Certification relevance
+- ✅ Mandatory
+
+### CI/CD role
+- Kernel presubmit
+- Nightly
+- Release gate
+
+---
+
+## `/packages/` — System Components as APKs
+
+### Architectural role
+Framework functionality delivered as APKs:
+- MediaProvider
+- PermissionController
+- TV services
+- Mainline modules
+
+### Code types
+- Java
+- Kotlin
+- JNI (C++)
+
+### Android layer
+- Framework (modularized)
+
+### What must be tested
+- Runtime behavior
+- Permission enforcement
+- Module boundaries
+
+### Execution models
+| Model | Where |
+|-----|------|
+| Instrumentation | Device |
+| Host-side JAR | Host |
+
+### Test suites
+- CTS
+- GTS
+- CTS-TV
+
+### Certification relevance
+- ✅ Mandatory
+
+### CI/CD role
+- Nightly
+- Release gate
+
+---
+
+## `/external/` — Third-party Libraries
+
+### Architectural role
+Upstream native dependencies.
+
+### Code types
+- C / C++
+- Rust
+
+### Android layer
+- Native libraries
+
+### What must be tested
+- ABI
+- Security patches
+- Integration correctness
+
+### Execution models
+- Native tests
+- CTS (indirect)
+
+### Certification relevance
+- ✅ Indirect but critical
+
+### CI/CD role
+- Nightly
+- Security releases
+
+---
+
+## `/art/` — Android Runtime
+
+### Architectural role
+Executes Java/Kotlin bytecode.
+
+### Code types
+- C++
+- Assembly
+- Java
+
+### Android layer
+- Runtime
+
+### What must be tested
+- JIT/AOT
+- GC
+- Runtime correctness
+
+### Execution models
+| Model | Where |
+|-----|------|
+| Native tests | Device |
+| Host JVM tests | Host |
+
+### Test suites
+- CTS
+- ART tests
+
+### Test locations
+```
+art/test/ 
+cts/tests/
+```
+
+### Certification relevance
+- ✅ Mandatory
+
+### CI/CD role
+- Nightly
+- Release gate
+
+---
+
+## `/bionic/` — C Library
+
+### Architectural role
+Android’s libc.
+
+### Code types
+- C
+- Assembly
+
+### Android layer
+- Native runtime
+
+### What must be tested
+- ABI
+- Syscall correctness
+
+### Execution models
+- Native tests
+
+### Test suites
+- CTS
+- STS
+
+### Test locations
+```
+bionic/tests/ 
+cts/tests/tests/native/
+'''
+
+### Certification relevance
+- ✅ Mandatory
+
+### CI/CD role
+- Nightly
+- Release gate
+
+---
+
+## `/test/` & `/platform_testing/` — Test Infrastructure
+
+### Architectural role
+Houses **tests and Tradefed infrastructure**.
+
+### Code types
+- Java
+- Python
+- Shell
+- Tradefed configs
+
+### Android layer
+- Test infra
+
+### Execution models
+- All execution models originate here
+
+### Test suites
+- CTS
+- VTS
+- GTS
+- STS
+- ATS
+- TVTS
+
+### Test locations
+```
+platform_testing/ 
+test/vts/ cts/
+```
+
+### Certification relevance
+- ❌ Indirect
+- ✅ Infrastructure-critical
+
+### CI/CD role
+- Entire pipeline
+
+---
+
+## Final System Mental Model
+
+- `frameworks/` breaks → CTS fails
+- `hardware/` or `vendor/` breaks → VTS fails
+- `kernel/` breaks → Kernel CTS fails
+- `packages/` breaks → CTS / GTS fails
+- `device/` breaks → CTS scope explodes
+
+AOSP is a **stacked contract system**.  
+Tests are the **enforcement mechanism**.
+
+This is how to navigate AOSP without guessing.
